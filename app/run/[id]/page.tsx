@@ -1,9 +1,80 @@
 "use client";
-import Link from "next/link";import {useParams} from "next/navigation";import {useEffect,useState} from "react";
-type Turn={speaker:"a"|"b";text:string};type Stage={scraping:boolean;analyzing:boolean;dating:{complete:number;total:number;currentTurns?:number};ranking:boolean};type MatchSummary={requested:number;available:number;reason?:string};type Match={rank:number;score:number;reason:string;name:string;dateId:string;turns:Turn[]};
-export default function Run(){const {id}=useParams<{id:string}>(),[personId,setPersonId]=useState(""),[profile,setProfile]=useState<any>(null),[matches,setMatches]=useState<Match[]>([]),[matchSummary,setMatchSummary]=useState<MatchSummary|null>(null),[stages,setStages]=useState<Stage>({scraping:false,analyzing:false,dating:{complete:0,total:0},ranking:false}),[liveTurns,setLiveTurns]=useState<Turn[]>([]),[status,setStatus]=useState("queued"),[error,setError]=useState(""),[manual,setManual]=useState(""),[recovering,setRecovering]=useState(false),[open,setOpen]=useState<number|null>(null);
- useEffect(()=>{const saved=sessionStorage.getItem(`proxy:${id}`);if(saved){const value=JSON.parse(saved);setPersonId(value.personId||"");setStatus(value.status||"queued");return}fetch(`/api/runs/${id}/progress`,{cache:"no-store"}).then(async r=>{const p=await r.json();if(!r.ok)throw new Error(p.error||"Saved run not found");sessionStorage.setItem(`proxy:${id}`,JSON.stringify({id,personId:p.personId,status:p.status,mode:"live"}));setPersonId(p.personId||"");setStages(p.stages);setLiveTurns(p.latestTranscript||[]);setMatchSummary(p.matchSummary||null);setStatus(p.status||"processing")}).catch(e=>setError(e instanceof Error?e.message:"Saved run not found"))},[id]);
- useEffect(()=>{if(!personId||status==="complete"||status==="needs_attention")return;let stopped=false,timer:ReturnType<typeof setTimeout>;async function cycle(){try{await fetch("/api/jobs/tick",{method:"POST"});const r=await fetch(`/api/runs/${id}/progress`,{cache:"no-store"}),p=await r.json();if(!r.ok)throw new Error(p.error);if(stopped)return;setStages(p.stages);setLiveTurns(p.latestTranscript||[]);setStatus(p.status);if(p.errors?.length)setError(p.errors.map((x:{type:string;message:string})=>`${x.type}: ${x.message}`).join("; "));if(p.status==="complete"){const [personRes,rankRes]=await Promise.all([fetch(`/api/people/${personId}`),fetch(`/api/runs/${id}/rankings?person=${personId}`)]),person=await personRes.json(),rankings=await rankRes.json();setProfile(person.profiles?.[0]?.profile||null);const assembled:Match[]=[];for(const row of rankings){const dr=await fetch(`/api/dates/${row.date_id}`),date=await dr.json();assembled.push({rank:row.rank,score:row.final_score,reason:row.reason,name:row.people?.name||"Match",dateId:row.date_id,turns:date.transcript||[]})}setMatches(assembled);return}}catch(e){setError(e instanceof Error?e.message:"Progress check failed")}timer=setTimeout(cycle,900)}cycle();return()=>{stopped=true;clearTimeout(timer)}},[id,personId,status]);
- async function retry(){setRecovering(true);setError("");const r=await fetch(`/api/runs/${id}/retry`,{method:"POST"}),j=await r.json();if(r.ok&&j.retried){setStatus("processing")}else setError(j.error||"No failed job was available to retry");setRecovering(false)}
- async function paste(){if(manual.trim().length<40){setError("Paste at least 40 characters of public profile text.");return}setRecovering(true);setError("");const r=await fetch(`/api/people/${personId}/paste`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text:manual,runId:id})}),j=await r.json();if(r.ok){setStatus("processing");setManual("")}else setError(j.error||"Could not accept profile text");setRecovering(false)}
- const completed=[stages.scraping,stages.analyzing,stages.dating.complete>0,stages.ranking];return <div className="page"><span className="eyebrow">Live agent run</span><h1 style={{font:"500 64px Georgia"}}>{status==="complete"?"Your proxy is ready.":status==="needs_attention"?"This run needs your help.":"Your agents are working…"}</h1><div className="progress">{completed.map((done,i)=><i className={`step ${done?"done":""}`} key={i}/>)}</div><div className="grid" style={{marginBottom:35}}>{["Scraping both sources","Building your profile",`Dating ${stages.dating.complete}/${stages.dating.total||6} · turn ${stages.dating.currentTurns||0}/8`,"Computing rankings"].map((x,i)=><div className="person" key={x}><span className="eyebrow">{completed[i]?"Complete":"Waiting"}</span><h3>{x}</h3></div>)}</div>{liveTurns.length>0&&status!=="complete"&&<section className="transcript"><span className="eyebrow">Live transcript</span>{liveTurns.map((t,n)=><div className={`bubble ${t.speaker==="b"?"b":""}`} key={n}><strong>Agent {t.speaker.toUpperCase()}</strong>{t.text}</div>)}</section>}{error&&<div className="error">{error}</div>}{status==="needs_attention"&&<div className="card" style={{marginTop:25}}><h2>Recover this run</h2><p className="note">Retry the failed job, or paste public LinkedIn profile text if scraping was blocked.</p><button className="button" disabled={recovering} onClick={retry}>Retry failed step</button><label style={{display:"block",marginTop:20}} className="eyebrow">Public profile text fallback</label><textarea value={manual} onChange={e=>setManual(e.target.value)} placeholder="Paste the public profile headline, about, experience, and skills…" style={{width:"100%",minHeight:130,padding:14,margin:"10px 0",borderRadius:10}}/><button className="button acid" disabled={recovering} onClick={paste}>Use pasted text and continue</button></div>}{profile&&<div className="card"><span className="eyebrow">Evidence-backed profile</span><h2>{profile.summary}</h2><span className="confidence">{Math.round(profile.confidence*100)}% confidence</span><div className="pills" style={{marginTop:14}}>{[...profile.needs,...profile.interests].slice(0,8).map((x:string)=><span className="pill" key={x}>{x}</span>)}</div></div>}{matches.length>0&&<section style={{marginTop:50}}><span className="eyebrow">Six agent dates completed</span><h2 style={{font:"500 46px Georgia"}}>Your ranked matches</h2>{matches.map((m,i)=><div key={m.dateId}><button className="rank" style={{width:"100%",background:"none",borderLeft:0,borderRight:0,borderTop:0,textAlign:"left",cursor:"pointer"}} onClick={()=>setOpen(open===i?null:i)}><span className="ranknum">#{m.rank}</span><div><h3>{m.name}</h3><p className="note">{m.reason} · Click to view date</p></div><span className="score">{Math.round(m.score)}</span></button>{open===i&&<div className="transcript">{m.turns.map((t,n)=><div className={`bubble ${t.speaker==="b"?"b":""}`} key={n}><strong>{t.speaker==="a"?"You":m.name}</strong>{t.text}</div>)}</div>}</div>)}</section>}<p style={{marginTop:35}}><Link className="button" href="/demo">Browse the full experiment →</Link></p></div>}
+
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+type Turn = { speaker: "a" | "b"; text: string };
+type Stages = { scraping: boolean; analyzing: boolean; dating: { complete: number; total: number; currentTurns?: number }; ranking: boolean };
+
+export default function RunPage() {
+  const { id } = useParams<{ id: string }>();
+  const router = useRouter();
+  const [personId, setPersonId] = useState("");
+  const [stages, setStages] = useState<Stages>({ scraping: false, analyzing: false, dating: { complete: 0, total: 0 }, ranking: false });
+  const [turns, setTurns] = useState<Turn[]>([]);
+  const [status, setStatus] = useState("queued");
+  const [error, setError] = useState("");
+  const [manual, setManual] = useState("");
+  const [recovering, setRecovering] = useState(false);
+
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`proxy:${id}`);
+    if (saved) setPersonId(JSON.parse(saved).personId || "");
+    else fetch(`/api/runs/${id}/progress`, { cache: "no-store" }).then(async response => {
+      const progress = await response.json();
+      if (!response.ok) throw new Error(progress.error || "Saved run not found");
+      setPersonId(progress.personId || "");
+      setStages(progress.stages);
+      setTurns(progress.latestTranscript || []);
+      setStatus(progress.status);
+      if (progress.status === "complete") router.replace(`/p/${progress.personId}`);
+    }).catch(cause => setError(cause instanceof Error ? cause.message : "Saved run not found"));
+  }, [id, router]);
+
+  useEffect(() => {
+    if (!personId || status === "complete" || status === "needs_attention") return;
+    let stopped = false, timer: ReturnType<typeof setTimeout>;
+    async function cycle() {
+      try {
+        await fetch("/api/jobs/tick", { method: "POST" });
+        const response = await fetch(`/api/runs/${id}/progress`, { cache: "no-store" }), progress = await response.json();
+        if (!response.ok) throw new Error(progress.error);
+        if (stopped) return;
+        setStages(progress.stages); setTurns(progress.latestTranscript || []); setStatus(progress.status);
+        if (progress.errors?.length) setError(progress.errors.map((item: { type: string; message: string }) => `${item.type}: ${item.message}`).join("; "));
+        if (progress.status === "complete") { sessionStorage.removeItem(`proxy:${id}`); router.replace(`/p/${personId}`); return; }
+      } catch (cause) { setError(cause instanceof Error ? cause.message : "Progress check failed"); }
+      timer = setTimeout(cycle, 900);
+    }
+    cycle();
+    return () => { stopped = true; clearTimeout(timer); };
+  }, [id, personId, router, status]);
+
+  async function retry() {
+    setRecovering(true); setError("");
+    const response = await fetch(`/api/runs/${id}/retry`, { method: "POST" }), result = await response.json();
+    if (response.ok && result.retried) setStatus("processing"); else setError(result.error || "No failed job was available to retry");
+    setRecovering(false);
+  }
+
+  async function paste() {
+    if (manual.trim().length < 40) { setError("Paste at least 40 characters of public profile text."); return; }
+    setRecovering(true); setError("");
+    const response = await fetch(`/api/people/${personId}/paste`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: manual, runId: id }) }), result = await response.json();
+    if (response.ok) { setStatus("processing"); setManual(""); } else setError(result.error || "Could not accept profile text");
+    setRecovering(false);
+  }
+
+  const completed = [stages.scraping, stages.analyzing, stages.dating.total > 0 && stages.dating.complete === stages.dating.total, stages.ranking];
+  const cards = ["Scraping both sources", "Building your profile", `Dating ${stages.dating.complete}/${stages.dating.total || 6} · turn ${stages.dating.currentTurns || 0}/8`, "Computing rankings"];
+  return <div className="page">
+    <span className="eyebrow">Live agent run</span>
+    <h1 style={{ font: "500 64px Georgia" }}>{status === "needs_attention" ? "This run needs your help." : "Your agents are working…"}</h1>
+    <p className="lede">When the run finishes, your complete evidence-backed profile opens first. Rankings are one step after that.</p>
+    <div className="progress">{completed.map((done, index) => <i className={`step ${done ? "done" : ""}`} key={index} />)}</div>
+    <div className="grid" style={{ marginBottom: 35 }}>{cards.map((label, index) => <div className="person" key={label}><span className="eyebrow">{completed[index] ? "Complete" : "Waiting"}</span><h3>{label}</h3></div>)}</div>
+    {turns.length > 0 && <section className="transcript"><span className="eyebrow">Live transcript</span>{turns.map((turn, index) => <div className={`bubble ${turn.speaker === "b" ? "b" : ""}`} key={index}><strong>Agent {turn.speaker.toUpperCase()}</strong>{turn.text}</div>)}</section>}
+    {error && <div className="error">{error}</div>}
+    {status === "needs_attention" && <div className="card" style={{ marginTop: 25 }}><h2>Recover this run</h2><p className="note">Retry the failed job, or paste public LinkedIn profile text if scraping was blocked.</p><button className="button" disabled={recovering} onClick={retry}>Retry failed step</button><label style={{ display: "block", marginTop: 20 }} className="eyebrow">Public profile text fallback</label><textarea value={manual} onChange={event => setManual(event.target.value)} placeholder="Paste the public profile headline, about, experience, and skills…" style={{ width: "100%", minHeight: 130, padding: 14, margin: "10px 0", borderRadius: 10 }} /><button className="button acid" disabled={recovering} onClick={paste}>Use pasted text and continue</button></div>}
+  </div>;
+}

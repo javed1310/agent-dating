@@ -24,9 +24,9 @@ Each production job is a short, retryable unit. Date conversations are persisted
 
 ## Scraping details
 
-- Instagram: Apify public profile scraper using the username, collecting bio and up to 12 recent public posts/captions. Private or missing profiles produce a clear failure.
+- Instagram: Apify public profile scraper using the username, collecting bio and up to 12 recent public posts/captions. An optional second public-profile actor (`APIFY_INSTAGRAM_FALLBACK_ACTOR`) provides free-tier failover. Private, missing, and empty results produce a clear failure.
 - LinkedIn: `data-slayer/linkedin-profile-scraper`, a low-cost Apify profile actor that accepts `linkedin_urls` without login cookies and returns public headline, about, experience, education, and skills.
-- The same two sources are the only inputs. `raw_data` uses `(person_id, source)` as a cache key, so a completed source is never scraped twice.
+- The same two sources are the only inputs. URLs are canonicalized, `raw_data` stores each source, and repeat submissions copy an existing matching pair from Supabase instead of spending scraper credits again.
 - If LinkedIn blocks a request, `/api/people/[id]/paste` accepts public profile text and queues analysis. Gemini is primary; Groq is automatic fallback.
 
 ## Matching and judgment
