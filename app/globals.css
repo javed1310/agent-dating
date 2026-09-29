@@ -5,3 +5,4 @@
 
 .matches-intro{display:block;height:auto;padding:0;border:0;position:static;background:transparent;backdrop-filter:none;max-width:800px;margin:38px 0 34px}
 .matches-intro .lede{margin:0}
+.intake select{width:100%;border:1px solid var(--line);background:#faf9f5;border-radius:10px;padding:14px;font:inherit;color:var(--ink)}.preference-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.preference-note{margin:9px 0 0}@media(max-width:560px){.preference-grid{grid-template-columns:1fr}}
