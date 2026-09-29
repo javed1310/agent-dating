@@ -17,7 +17,13 @@ async function actor(actorId: string, input: unknown, source: "Instagram" | "Lin
 }
 
 const first = (result: unknown) => Array.isArray(result) ? result[0] : result;
-const missing = (result: unknown) => !first(result) || (typeof first(result) === "object" && Object.keys(first(result) as object).length === 0);
+const missing = (result: unknown) => {
+  const value = first(result);
+  if (!value || typeof value !== "object") return true;
+  const record = value as { error?: unknown; errorDescription?: unknown; requestErrorMessages?: unknown };
+  if (record.error || record.errorDescription || (Array.isArray(record.requestErrorMessages) && record.requestErrorMessages.length > 0)) return true;
+  return Object.keys(record).length === 0;
+};
 const privateInstagram = (result: unknown) => { const value = first(result) as { private?: boolean; isPrivate?: boolean } | undefined; return value?.private === true || value?.isPrivate === true; };
 
 async function instagramProfile(url: string, username: string) {
