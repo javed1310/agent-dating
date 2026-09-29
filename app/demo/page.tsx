@@ -5,17 +5,16 @@ import { getCompletedLiveAgents } from "@/lib/live-runs";
 export const dynamic = "force-dynamic";
 
 export default async function Demo() {
-  const [run, people, liveAgents] = await Promise.all([
-    getDemoRun(),
-    getPeople(),
-    getCompletedLiveAgents(),
-  ]);
+  const [run, people] = await Promise.all([getDemoRun(), getPeople()]);
+  const liveAgents = await getCompletedLiveAgents(people);
+  const totalPeople = people.length + liveAgents.length;
+  const totalDates = run.dates.length + liveAgents.reduce((sum, agent) => sum + agent.dates, 0);
 
   return (
     <div className="page">
-      <span className="eyebrow">Original experiment · complete</span>
+      <span className="eyebrow">Growing experiment · complete runs only</span>
       <h1 style={{ font: "500 64px Georgia", marginBottom: 10 }}>
-        {people.length} people. {run.dates.length} first dates.
+        {totalPeople} people. {totalDates} first dates.
       </h1>
       <p className="lede">
         A browsable experiment built from public LinkedIn and Instagram signals.
@@ -28,7 +27,7 @@ export default async function Demo() {
         <section style={{ margin: "54px 0" }}>
           <span className="eyebrow">Saved from the live site</span>
           <h2 style={{ font: "500 46px Georgia", margin: "10px 0" }}>Newly added agents</h2>
-          <p className="note">Open an agent to see their saved profile, six dates, and rankings.</p>
+          <p className="note">Open an agent to see their saved profile, completed dates, and rankings.</p>
           <div className="grid" style={{ marginTop: 24 }}>
             {liveAgents.map((agent) => (
               <Link className="person live-person" href={`/run/${agent.runId}`} key={agent.runId}>
