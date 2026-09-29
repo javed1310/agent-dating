@@ -30,7 +30,7 @@ export default async function Demo() {
           <p className="note">Open an agent to see their saved profile, completed dates, and rankings.</p>
           <div className="grid" style={{ marginTop: 24 }}>
             {liveAgents.map((agent) => (
-              <Link className="person live-person" href={`/run/${agent.runId}`} key={agent.runId}>
+              <Link className="person live-person" href={`/p/${agent.personId}`} key={agent.personId}>
                 <div className="avatar" style={{ background: "var(--acid)" }}>
                   {agent.name.split(" ").map((part) => part[0]).join("").slice(0, 3)}
                 </div>
