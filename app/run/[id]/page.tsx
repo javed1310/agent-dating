@@ -83,7 +83,7 @@ export default function RunPage() {
   }
 
   const completed = [stages.scraping, stages.analyzing, stages.dating.total > 0 && stages.dating.complete === stages.dating.total, stages.ranking];
-  const cards = ["Scraping both sources", "Building your profile", `Dating ${stages.dating.complete}/${stages.dating.total || 6} · turn ${stages.dating.currentTurns || 0}/8`, "Computing rankings"];
+  const cards = ["Scraping both sources", "Building your profile", `Dating ${stages.dating.complete}/${stages.dating.total || 6} · turn ${Math.min(stages.dating.currentTurns || 0, 12)}/12`, "Computing rankings"];
   const failedSource = /instagram/i.test(error) ? "instagram" : /linkedin/i.test(error) ? "linkedin" : null;
   const failedSourceName = failedSource === "instagram" ? "Instagram" : failedSource === "linkedin" ? "LinkedIn" : "Profile";
   const failureHeading = failedSource === "instagram" && /private/i.test(error) ? "Instagram profile is private" : `${failedSourceName} profile could not be accessed`;

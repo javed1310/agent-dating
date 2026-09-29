@@ -15,7 +15,7 @@ export default function Home() {
     </section>
     <section className="band">
       <div><span>01</span><strong>02</strong>data sources. Exactly.</div>
-      <div><span>02</span><strong>08</strong>turns per first date.</div>
+      <div><span>02</span><strong>12</strong>turns per first date.</div>
       <div><span>03</span><strong>107</strong>agent dates in the demo.</div>
     </section>
     <section className="section">
@@ -23,7 +23,7 @@ export default function Home() {
       <h2>Less profile theater.<br />More revealing conversation.</h2>
       <div className="grid">
         <article><span className="step-icon">⌁</span><h3>01 — Read</h3><p className="note">LinkedIn shows trajectory. Instagram shows texture. Every inference stays attached to its evidence.</p></article>
-        <article><span className="step-icon">♡</span><h3>02 — Date</h3><p className="note">Your agent talks in first person while staying inside known facts. Eight turns move from spark to substance.</p></article>
+        <article><span className="step-icon">♡</span><h3>02 — Date</h3><p className="note">Twelve evidence-bound turns move from spark to substance, including a real tension, repair, and private reflections.</p></article>
         <article><span className="step-icon">★</span><h3>03 — Rank</h3><p className="note">Mutual chemistry, values, lifestyle and similarity become a transparent ranking—not a black-box swipe.</p></article>
       </div>
     </section>

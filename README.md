@@ -31,7 +31,7 @@ Each production job is a short, retryable unit. Date conversations are persisted
 
 ## Matching and judgment
 
-Profiles include needs, hobbies, interests, values, voice, lifestyle, deal breakers, confidence, and mandatory source evidence for all 12 major field groups. Agents stay within known facts during an eight-turn date. The judge scores interest, chemistry, values, lifestyle, red flags, and overall from both sides. When both free LLM providers rate-limit, a deterministic evidence-grounded agent engine completes the current turn or judgment rather than failing the run; completed work remains cached.
+Profiles include needs, hobbies, interests, values, voice, lifestyle, deal breakers, confidence, and mandatory source evidence for all 12 major field groups. Agents stay within known facts during a 12-turn date that includes follow-ups, a genuine trade-off, respectful repair, and independent private reflections. The judge cites transcript turns while scoring interest, chemistry, values, lifestyle, red flags, and overall from both sides, with confidence reduced when evidence is thin. When both free LLM providers rate-limit, a deterministic evidence-grounded agent engine completes the current turn or judgment rather than failing the run; completed work remains cached.
 
 `final = .55 × self judgment + .25 × mutual judgment + .20 × similarity`; subtract 10 for a red-flag score of 7+.
 

@@ -1,4 +1,5 @@
 import type { AgentProfile } from "./schema";
+import { groundedFallback } from "./agents/date";
 
 const seeds = [
  ["Melanie Perkins","Canva co-founder","Sydney","design,travel,building","https://www.linkedin.com/in/melanieperkins/","https://www.instagram.com/melaniecanva/"],
@@ -35,7 +36,7 @@ export const people:DemoPerson[]=seeds.map((s,i)=>{const interests=s[3].split(",
  summary:`${s[0]} comes across as a curious, high-agency person who balances ${s[1].toLowerCase()} with ${interests[0]}. Their public voice suggests warmth, clarity, and a bias toward building things that bring people together.`,career_stage:s[1],skills:["Leadership","Storytelling","Creative problem-solving"],hobbies:interests,interests,values:["Curiosity","Growth","Meaningful connection"],communication_style:"Direct, energetic, and reflective; uses stories to make ideas personal.",lifestyle:`A full, outward-facing life anchored in ${s[2]}, with room for creative work and intentional downtime.`,location:s[2],needs:["Intellectual spark","Emotional steadiness","Playfulness"],looking_for:"Someone self-directed who can be both an enthusiastic collaborator and a calm counterweight.",deal_breakers:["Performative curiosity","Dismissive communication"],evidence:[{claim:`Invested in ${interests[0]}`,source:"Instagram",snippet:`Recent public captions repeatedly feature ${interests.join(", ")}.`},{claim:"Builder mindset",source:"LinkedIn",snippet:`Public headline identifies them as ${s[1]}.`}],confidence:.78+(i%4)*.04}}});
 export const personById=(id:string)=>people.find(p=>p.id===id);
 export function matchesFor(id:string){const idx=people.findIndex(p=>p.id===id);return [1,7,13,19,5,11].map((n,rank)=>{const p=people[(idx+n)%people.length];return {person:p,rank:rank+1,score:94-rank*4-(idx%3),reason:`Strong overlap in ${p.profile.interests[rank%p.profile.interests.length]} with a complementary communication rhythm.`,dateId:`${id}--${p.id}`}})}
-export function demoDate(id:string){const [aId,bId]=id.split("--");const a=personById(aId)||people[0], b=personById(bId)||people[1];const shared=a.profile.interests.find(x=>b.profile.interests.includes(x))||a.profile.interests[0];return {a,b,turns:[
+function legacyDemoDate(id:string){const [aId,bId]=id.split("--");const a=personById(aId)||people[0], b=personById(bId)||people[1];const shared=a.profile.interests.find(x=>b.profile.interests.includes(x))||a.profile.interests[0];return {a,b,turns:[
  {who:"a",text:`Let’s skip the résumé question. What’s something about ${shared} that still surprises you?`},
  {who:"b",text:`How it changes when you share it with someone. I’m curious: do you make room for wonder, or schedule it like everything else?`},
  {who:"a",text:"A little of both. Ambition gives my week shape, but the best parts tend to be unplanned. What does a genuinely good Sunday look like to you?"},
@@ -45,3 +46,5 @@ export function demoDate(id:string){const [aId,bId]=id.split("--");const a=perso
  {who:"a",text:"Name the real thing early, stay kind, and get curious before getting defensive. Chemistry without repair skills feels temporary."},
  {who:"b",text:"Then yes, I’d meet again. Somewhere neither of us can optimize—maybe a tiny restaurant with no reviews?"}
  ],scoreA:91,scoreB:88,reason:"Mutual curiosity grew into a grounded conversation about ambition, presence, and repair."};}
+void legacyDemoDate;
+export function demoDate(id:string){const [aId,bId]=id.split("--"),a=personById(aId)||people[0],b=personById(bId)||people[1],result=groundedFallback(a,b);return{a,b,turns:result.turns.map(turn=>({who:turn.speaker,text:turn.text})),reflections:result.reflections,scoreA:result.scores.a_to_b.overall,scoreB:result.scores.b_to_a.overall,reason:`${result.scores.a_to_b.reason} ${result.scores.b_to_a.reason}`,scores:result.scores}}

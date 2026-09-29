@@ -152,6 +152,14 @@ footer { border-top: 2px solid var(--ink); background: var(--ink); color: white;
 .bubble.b { border-radius: 18px 18px 4px 18px; box-shadow: 4px 4px 0 var(--cyan); }
 .bubble strong { color: var(--purple); }
 .bubble.b strong { color: var(--acid); }
+.reflection-section { margin-top: 56px; }
+.reflection-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 18px; }
+.reflection-card { position: relative; border: 2px solid var(--ink); border-radius: 20px; padding: 26px; background: #fff0f8; box-shadow: 7px 7px 0 var(--pink); }
+.reflection-card:nth-child(2) { background: #edfbff; box-shadow-color: var(--cyan); }
+.reflection-card h2 { margin-top: 8px; }
+.reflection-card li { margin-block: 8px; color: var(--muted); }
+.reflection-verdict { display: inline-block; padding: 6px 10px; border: 2px solid var(--ink); border-radius: 99px; background: var(--acid); font-size: 11px; font-weight: 900; text-transform: uppercase; box-shadow: 2px 2px 0 var(--ink); }
+.judge-card { background: var(--ink); color: white; box-shadow-color: var(--purple); }
 
 .matches-intro { max-width: 1000px; }
 .matches-intro h1 { font-size: clamp(54px, 7vw, 96px); letter-spacing: -.06em; }
@@ -192,6 +200,7 @@ footer { border-top: 2px solid var(--ink); background: var(--ink); color: white;
   .big-avatar { max-width: 330px; }
   .facts { grid-template-columns: 1fr; }
   .bubble { max-width: 90%; }
+  .reflection-grid { grid-template-columns: 1fr; }
   .match-card { grid-template-columns: 54px 1fr; }
   footer { padding-inline: 24px; }
 }
