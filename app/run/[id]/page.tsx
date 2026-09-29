@@ -2,6 +2,7 @@
 
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { browserDb } from "@/lib/db/browser";
 
 type Turn = { speaker: "a" | "b"; text: string };
 type Stages = { scraping: boolean; analyzing: boolean; dating: { complete: number; total: number; currentTurns?: number }; ranking: boolean };
@@ -16,6 +17,7 @@ export default function RunPage() {
   const [error, setError] = useState("");
   const [manual, setManual] = useState("");
   const [recovering, setRecovering] = useState(false);
+  const [realtime, setRealtime] = useState(false);
 
   useEffect(() => {
     const saved = sessionStorage.getItem(`proxy:${id}`);
@@ -30,6 +32,19 @@ export default function RunPage() {
       if (progress.status === "complete") router.replace(`/p/${progress.personId}`);
     }).catch(cause => setError(cause instanceof Error ? cause.message : "Saved run not found"));
   }, [id, router]);
+
+  useEffect(() => {
+    if (!personId) return;
+    const client = browserDb();
+    if (!client) return;
+    const channel = client.channel(`run:${id}`).on("broadcast", { event: "progress" }, async () => {
+      const response = await fetch(`/api/runs/${id}/progress`, { cache: "no-store" }), progress = await response.json();
+      if (!response.ok) return;
+      setStages(progress.stages); setTurns(progress.latestTranscript || []); setStatus(progress.status);
+      if (progress.status === "complete") { sessionStorage.removeItem(`proxy:${id}`); router.replace(`/p/${personId}`); }
+    }).subscribe(subscription => setRealtime(subscription === "SUBSCRIBED"));
+    return () => { setRealtime(false); void client.removeChannel(channel); };
+  }, [id, personId, router]);
 
   useEffect(() => {
     if (!personId || status === "complete" || status === "needs_attention") return;
@@ -68,7 +83,7 @@ export default function RunPage() {
   const completed = [stages.scraping, stages.analyzing, stages.dating.total > 0 && stages.dating.complete === stages.dating.total, stages.ranking];
   const cards = ["Scraping both sources", "Building your profile", `Dating ${stages.dating.complete}/${stages.dating.total || 6} · turn ${stages.dating.currentTurns || 0}/8`, "Computing rankings"];
   return <div className="page">
-    <span className="eyebrow">Live agent run</span>
+    <span className="eyebrow">Live agent run · {realtime ? "Realtime connected" : "Secure polling"}</span>
     <h1 style={{ font: "500 64px Georgia" }}>{status === "needs_attention" ? "This run needs your help." : "Your agents are working…"}</h1>
     <p className="lede">When the run finishes, your complete evidence-backed profile opens first. Rankings are one step after that.</p>
     <div className="progress">{completed.map((done, index) => <i className={`step ${done ? "done" : ""}`} key={index} />)}</div>

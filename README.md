@@ -20,7 +20,7 @@ After applying the schema in the Supabase SQL Editor, seed the completed run wit
 
 `links → scrape/cache → analyst JSON + embedding → top-K pairs → 8-turn dates → two-sided judge → rankings`
 
-Each production job is a short, retryable unit. Date conversations are persisted one turn per job, then judged in a separate job, so the progress screen can show the transcript growing from turn 1 to turn 8. Provider 429s trigger immediate Gemini/Groq failover; remaining failures return to the database queue with exponential backoff. The database schema contains the queue, raw source cache, profiles, dates, scores, and rankings. Pair pre-filtering deliberately limits 325 possible pairs to roughly 100 useful conversations.
+Each production job is a short, retryable unit. Date conversations are persisted one turn per job, then judged in a separate job. Each completed job broadcasts a run-scoped Supabase Realtime event so the progress screen refreshes immediately; secure polling remains as a connection fallback. Provider 429s trigger immediate Gemini/Groq failover; remaining failures return to the database queue with exponential backoff. The database schema contains the queue, raw source cache, profiles, dates, scores, and rankings. Pair pre-filtering deliberately limits 325 possible pairs to roughly 100 useful conversations.
 
 ## Scraping details
 

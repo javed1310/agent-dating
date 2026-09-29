@@ -1,2 +1,16 @@
-import {NextResponse} from "next/server";import {tick} from "@/lib/jobs/worker";
-export const maxDuration=30;export async function POST(){try{return NextResponse.json({job:await tick()})}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Worker failed"},{status:500})}}
+import { NextResponse } from "next/server";
+import { tick } from "@/lib/jobs/worker";
+import { db } from "@/lib/db/supabase";
+
+export const maxDuration = 30;
+export async function POST() {
+  try {
+    const job = await tick();
+    if (job?.runId) {
+      const client = db(), channel = client.channel(`run:${job.runId}`);
+      await channel.send({ type: "broadcast", event: "progress", payload: { job: job.type, status: job.status } });
+      await client.removeChannel(channel);
+    }
+    return NextResponse.json({ job });
+  } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Worker failed" }, { status: 500 }); }
+}
