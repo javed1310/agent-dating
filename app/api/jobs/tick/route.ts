@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { tick } from "@/lib/jobs/worker";
 import { db } from "@/lib/db/supabase";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({})) as { runId?: unknown };

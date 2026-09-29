@@ -5,12 +5,15 @@ export type Sources = { linkedin: unknown; instagram: unknown };
 async function actor(actorId: string, input: unknown, source: "Instagram" | "LinkedIn") {
   const token = process.env.APIFY_TOKEN;
   if (!token || !actorId) throw new Error("Scraper is not configured");
-  // Stay below the 30-second Vercel function limit so failures can be persisted
-  // and presented to the user instead of leaving the job lease in `running`.
-  const url = `https://api.apify.com/v2/acts/${actorId.replace("/", "~")}/run-sync-get-dataset-items?token=${token}&timeout=9`;
-  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input), cache: "no-store", signal: AbortSignal.timeout(11000) });
+  // Instagram frequently needs a second session after a blocked request. Nine
+  // seconds killed healthy runs during that retry, so allow the actor to finish
+  // while remaining inside the 60-second worker budget (primary + fallback).
+  const url = `https://api.apify.com/v2/acts/${actorId.replace("/", "~")}/run-sync-get-dataset-items?token=${token}&timeout=20`;
+  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input), cache: "no-store", signal: AbortSignal.timeout(23000) });
   if (!response.ok) {
-    if (response.status === 400 || response.status === 404) throw new Error(`${source} returned no public profile data. The profile may be private, unavailable, or unsupported. Paste public profile text to continue.`);
+    const body = await response.text(), detail = body.slice(0, 1200);
+    if (/timed?[ -]?out|timeout/i.test(detail)) throw new Error(`${source} scraper timed out while retrying a blocked request. Please retry.`);
+    if (response.status === 400 || response.status === 404) throw new Error(`${source} scraper rejected the request (${response.status}). Please retry or use the public-text fallback.`);
     throw new Error(`${source} scraper temporarily failed (${response.status}). Please retry.`);
   }
   return response.json();
@@ -27,7 +30,8 @@ const missing = (result: unknown) => {
 const privateInstagram = (result: unknown) => { const value = first(result) as { private?: boolean; isPrivate?: boolean; privateAccount?: boolean; errorDescription?: unknown } | undefined; return value?.private === true || value?.isPrivate === true || value?.privateAccount === true || /private/i.test(String(value?.errorDescription || "")); };
 
 export function assertUsableSources(sources: Sources) {
-  if (privateInstagram(sources.instagram) || missing(sources.instagram)) throw new Error("This Instagram is private or returned no public profile data. Paste public profile text to continue.");
+  if (privateInstagram(sources.instagram)) throw new Error("This Instagram is private. Make it public or paste authorized profile text to continue.");
+  if (missing(sources.instagram)) throw new Error("Instagram returned an empty dataset. Please retry or paste authorized public profile text to continue.");
   if (missing(sources.linkedin)) throw new Error("LinkedIn returned no public profile data. Paste public profile text to continue.");
 }
 
@@ -36,19 +40,19 @@ async function instagramProfile(url: string, username: string) {
   try {
     const result = await actor(primary, { usernames: [username], resultsLimit: 12 }, "Instagram");
     if (!missing(result) && !privateInstagram(result)) return result;
-    if (privateInstagram(result)) throw new Error("This Instagram is private or not found");
+    if (privateInstagram(result)) throw new Error("This Instagram is private. Make it public or paste authorized profile text to continue.");
   } catch (error) {
     const fallback = process.env.APIFY_INSTAGRAM_FALLBACK_ACTOR || "apify/instagram-scraper";
     if (!fallback || fallback === primary) throw error;
     const result = await actor(fallback, { usernames: [username], resultsLimit: 12, directUrls: [url] }, "Instagram");
     if (!missing(result) && !privateInstagram(result)) return result;
   }
-  throw new Error("This Instagram is private or not found");
+  throw new Error("Instagram returned an empty dataset. Please retry or paste authorized public profile text to continue.");
 }
 
 export async function scrapeBoth(linkedinUrl: string, instagramUrl: string): Promise<Sources> {
   const username = new URL(instagramUrl).pathname.split("/").filter(Boolean)[0];
-  if (!username) throw new Error("This Instagram is private or not found");
+  if (!username) throw new Error("Instagram profile URL does not contain a username.");
   const linkedinActor = process.env.APIFY_LINKEDIN_ACTOR || "data-slayer/linkedin-profile-scraper";
   const linkedinInput = linkedinActor.startsWith("data-slayer/") ? { linkedin_urls: [linkedinUrl] } : { profileUrls: [linkedinUrl] };
   const [instagram, linkedin] = await Promise.all([
