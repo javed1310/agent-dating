@@ -51,7 +51,7 @@ export default function RunPage() {
     let stopped = false, timer: ReturnType<typeof setTimeout>;
     async function cycle() {
       try {
-        await fetch("/api/jobs/tick", { method: "POST" });
+        await fetch("/api/jobs/tick", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: id }) });
         const response = await fetch(`/api/runs/${id}/progress`, { cache: "no-store" }), progress = await response.json();
         if (!response.ok) throw new Error(progress.error);
         if (stopped) return;
