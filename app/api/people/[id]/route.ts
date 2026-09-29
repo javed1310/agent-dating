@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {db} from "@/lib/db/supabase";
+export async function GET(_:Request,{params}:{params:Promise<{id:string}>}){const {id}=await params,{data,error}=await db().from("people").select("id,name,status,linkedin_url,instagram_url,profiles(profile,confidence,model)").eq("id",id).single();return error?NextResponse.json({error:error.message},{status:404}):NextResponse.json(data)}

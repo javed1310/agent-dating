@@ -1,0 +1,1 @@
+export function finalScore(self:number,mutual:number,similarity:number,redA=0,redB=0){const raw=.55*self+.25*mutual+.2*similarity*100;return Math.max(0,Math.round((raw-(redA>=7||redB>=7?10:0))*10)/10)}
