@@ -5,8 +5,10 @@ export type Sources = { linkedin: unknown; instagram: unknown };
 async function actor(actorId: string, input: unknown) {
   const token = process.env.APIFY_TOKEN;
   if (!token || !actorId) throw new Error("Scraper is not configured");
-  const url = `https://api.apify.com/v2/acts/${actorId.replace("/", "~")}/run-sync-get-dataset-items?token=${token}&timeout=25`;
-  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input), cache: "no-store", signal: AbortSignal.timeout(60000) });
+  // Stay below the 30-second Vercel function limit so failures can be persisted
+  // and presented to the user instead of leaving the job lease in `running`.
+  const url = `https://api.apify.com/v2/acts/${actorId.replace("/", "~")}/run-sync-get-dataset-items?token=${token}&timeout=12`;
+  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input), cache: "no-store", signal: AbortSignal.timeout(14000) });
   if (!response.ok) throw new Error(`Scraper returned ${response.status}`);
   return response.json();
 }
