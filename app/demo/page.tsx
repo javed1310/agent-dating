@@ -1,23 +1,53 @@
 import Link from "next/link";
 import { getDemoRun, getPeople } from "@/lib/run-data";
+import { getCompletedLiveAgents } from "@/lib/live-runs";
+
+export const dynamic = "force-dynamic";
 
 export default async function Demo() {
-  const [run, people] = await Promise.all([getDemoRun(), getPeople()]);
+  const [run, people, liveAgents] = await Promise.all([
+    getDemoRun(),
+    getPeople(),
+    getCompletedLiveAgents(),
+  ]);
 
   return (
     <div className="page">
-      <span className="eyebrow">Precomputed experiment · complete</span>
+      <span className="eyebrow">Original experiment · complete</span>
       <h1 style={{ font: "500 64px Georgia", marginBottom: 10 }}>
         {people.length} people. {run.dates.length} first dates.
       </h1>
       <p className="lede">
-        A fixed, browsable experiment built from public LinkedIn and Instagram signals.
-        Live submissions are saved separately at their private run URL and do not get
-        published into this public demo automatically.
+        A browsable experiment built from public LinkedIn and Instagram signals.
+        Completed live submissions are saved below as newly added agents.
       </p>
       <div className="progress">
         {[1, 2, 3, 4].map((step) => <i className="step done" key={step} />)}
       </div>
+      {liveAgents.length > 0 && (
+        <section style={{ margin: "54px 0" }}>
+          <span className="eyebrow">Saved from the live site</span>
+          <h2 style={{ font: "500 46px Georgia", margin: "10px 0" }}>Newly added agents</h2>
+          <p className="note">Open an agent to see their saved profile, six dates, and rankings.</p>
+          <div className="grid" style={{ marginTop: 24 }}>
+            {liveAgents.map((agent) => (
+              <Link className="person live-person" href={`/run/${agent.runId}`} key={agent.runId}>
+                <div className="avatar" style={{ background: "var(--acid)" }}>
+                  {agent.name.split(" ").map((part) => part[0]).join("").slice(0, 3)}
+                </div>
+                <span className="eyebrow">Live agent · {agent.dates} dates</span>
+                <h3>{agent.name}</h3>
+                <p className="note">{agent.role} · {agent.location}</p>
+                <div className="pills">
+                  {agent.interests.slice(0, 4).map((interest) => (
+                    <span className="pill" key={interest}>{interest}</span>
+                  ))}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
       <div className="grid">
         {people.map((person, index) => (
           <Link className="person" href={`/p/${person.id}`} key={person.id}>
