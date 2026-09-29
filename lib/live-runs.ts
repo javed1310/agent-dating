@@ -6,7 +6,7 @@ type LinkedPerson = {
   id: string;
   name: string;
   status: string;
-  profiles?: Array<{ profile: Profile }>;
+  profiles?: { profile: Profile } | Array<{ profile: Profile }>;
 };
 
 export type LiveAgent = {
@@ -43,7 +43,10 @@ export async function getCompletedLiveAgents(): Promise<LiveAgent[]> {
 
   return (links || []).flatMap((link) => {
     const person = link.people as unknown as LinkedPerson | null;
-    const profile = person?.profiles?.[0]?.profile;
+    const relatedProfile = person?.profiles;
+    const profile = Array.isArray(relatedProfile)
+      ? relatedProfile[0]?.profile
+      : relatedProfile?.profile;
     if (!person || person.status !== "complete" || !profile) return [];
     return [{
       runId: link.run_id,
