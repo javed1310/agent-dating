@@ -7,8 +7,8 @@ async function actor(actorId: string, input: unknown, source: "Instagram" | "Lin
   if (!token || !actorId) throw new Error("Scraper is not configured");
   // Stay below the 30-second Vercel function limit so failures can be persisted
   // and presented to the user instead of leaving the job lease in `running`.
-  const url = `https://api.apify.com/v2/acts/${actorId.replace("/", "~")}/run-sync-get-dataset-items?token=${token}&timeout=12`;
-  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input), cache: "no-store", signal: AbortSignal.timeout(14000) });
+  const url = `https://api.apify.com/v2/acts/${actorId.replace("/", "~")}/run-sync-get-dataset-items?token=${token}&timeout=9`;
+  const response = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(input), cache: "no-store", signal: AbortSignal.timeout(11000) });
   if (!response.ok) {
     if (response.status === 400 || response.status === 404) throw new Error(`${source} returned no public profile data. The profile may be private, unavailable, or unsupported. Paste public profile text to continue.`);
     throw new Error(`${source} scraper temporarily failed (${response.status}). Please retry.`);

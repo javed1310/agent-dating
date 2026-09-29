@@ -4,8 +4,7 @@ export const intakeSchema = z.object({
   linkedinUrl: z.string().url().refine(v => /(^|\.)linkedin\.com$/i.test(new URL(v).hostname.replace(/^www\./,"")), "Use a linkedin.com profile URL"),
   instagramUrl: z.string().url().refine(v => /(^|\.)instagram\.com$/i.test(new URL(v).hostname.replace(/^www\./,"")), "Use an instagram.com public profile URL"),
   gender: z.preprocess(v=>v===""?undefined:v,z.enum(["man","woman","non_binary","prefer_not_to_say"]).optional()),
-  interestedIn: z.preprocess(v=>v===""?undefined:v,z.enum(["men","women","non_binary","everyone"]).optional()),
-  fallbackText: z.string().max(15000).optional()
+  interestedIn: z.preprocess(v=>v===""?undefined:v,z.enum(["men","women","non_binary","everyone"]).optional())
 });
 export const profileSchema = z.object({
   summary:z.string(), career_stage:z.string(), skills:z.array(z.string()), hobbies:z.array(z.string()), interests:z.array(z.string()), values:z.array(z.string()),

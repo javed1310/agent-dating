@@ -21,7 +21,7 @@ export default function RunPage() {
 
   useEffect(() => {
     const saved = sessionStorage.getItem(`proxy:${id}`);
-    if (saved) setPersonId(JSON.parse(saved).personId || "");
+    if (saved) Promise.resolve(JSON.parse(saved).personId || "").then(setPersonId);
     else fetch(`/api/runs/${id}/progress`, { cache: "no-store" }).then(async response => {
       const progress = await response.json();
       if (!response.ok) throw new Error(progress.error || "Saved run not found");

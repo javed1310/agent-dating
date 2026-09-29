@@ -44,12 +44,6 @@ export default function IntakeForm() {
       <p className="note">Self-declared only. Gender is never inferred from either profile.</p>
     </details>
 
-    <details className="form-disclosure fallback-disclosure">
-      <summary><span>Scraper blocked?</span><small>Paste profile text instead</small></summary>
-      <label htmlFor="fallbackText">Public profile text</label>
-      <textarea id="fallbackText" name="fallbackText" placeholder="Paste the public headline, about section, experience, or bio…" />
-    </details>
-
     <button className="button intake-submit" disabled={busy}>{busy?"Building your agent…":"Create my dating agent"}<span aria-hidden="true">→</span></button>
     {error&&<div className="error">{error}</div>}
     <p className="privacy-note"><span aria-hidden="true">◇</span> Public data only · no sensitive-trait inference</p>

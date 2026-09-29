@@ -7,18 +7,15 @@ export const dynamic = "force-dynamic";
 export default async function Demo() {
   const [run, people] = await Promise.all([getDemoRun(), getPeople()]);
   const liveAgents = await getCompletedLiveAgents(people);
-  const totalPeople = people.length + liveAgents.length;
-  const totalDates = run.dates.length + liveAgents.reduce((sum, agent) => sum + agent.dates, 0);
-
   return (
     <div className="page">
-      <span className="eyebrow">Growing experiment · complete runs only</span>
+      <span className="eyebrow">Precomputed experiment · complete</span>
       <h1 style={{ font: "500 64px Georgia", marginBottom: 10 }}>
-        {totalPeople} people. {totalDates} first dates.
+        {people.length} people. {run.dates.length} first dates.
       </h1>
       <p className="lede">
-        A browsable experiment built from public LinkedIn and Instagram signals.
-        Completed live submissions are saved below as newly added agents.
+        A fixed, browsable experiment built from public LinkedIn and Instagram signals.
+        Completed live submissions are shown separately and never change these demo totals.
       </p>
       <div className="progress">
         {[1, 2, 3, 4].map((step) => <i className="step done" key={step} />)}
