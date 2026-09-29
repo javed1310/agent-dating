@@ -24,7 +24,12 @@ const missing = (result: unknown) => {
   if (record.error || record.errorDescription || (Array.isArray(record.requestErrorMessages) && record.requestErrorMessages.length > 0)) return true;
   return Object.keys(record).length === 0;
 };
-const privateInstagram = (result: unknown) => { const value = first(result) as { private?: boolean; isPrivate?: boolean } | undefined; return value?.private === true || value?.isPrivate === true; };
+const privateInstagram = (result: unknown) => { const value = first(result) as { private?: boolean; isPrivate?: boolean; privateAccount?: boolean; errorDescription?: unknown } | undefined; return value?.private === true || value?.isPrivate === true || value?.privateAccount === true || /private/i.test(String(value?.errorDescription || "")); };
+
+export function assertUsableSources(sources: Sources) {
+  if (privateInstagram(sources.instagram) || missing(sources.instagram)) throw new Error("This Instagram is private or returned no public profile data. Paste public profile text to continue.");
+  if (missing(sources.linkedin)) throw new Error("LinkedIn returned no public profile data. Paste public profile text to continue.");
+}
 
 async function instagramProfile(url: string, username: string) {
   const primary = process.env.APIFY_INSTAGRAM_ACTOR || "apify/instagram-profile-scraper";
@@ -50,7 +55,7 @@ export async function scrapeBoth(linkedinUrl: string, instagramUrl: string): Pro
     cached("instagram", instagramUrl, () => instagramProfile(instagramUrl, username)),
     cached("linkedin", linkedinUrl, () => actor(linkedinActor, linkedinInput, "LinkedIn")),
   ]);
-  if (missing(instagram) || privateInstagram(instagram)) throw new Error("This Instagram is private or not found");
-  if (missing(linkedin)) throw new Error("LinkedIn returned no public profile data. Paste the public profile text to continue.");
-  return { instagram, linkedin };
+  const sources = { instagram, linkedin };
+  assertUsableSources(sources);
+  return sources;
 }
