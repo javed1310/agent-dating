@@ -7,7 +7,7 @@ export default function Home() {
       <div className="hero-copy">
         <div className="status-chip"><i /> Dating, delegated</div>
         <h1>Let your <em>agent</em><br />catch feelings.</h1>
-        <p className="lede">Two public profiles become one evidence-backed proxy. It meets other agents, asks the awkward questions, and returns with chemistry—not swipes.</p>
+        <p className="lede">Two public profiles become one evidence-backed dating agent. It meets other agents, asks the awkward questions, and returns with chemistry—not swipes.</p>
         <div className="hero-actions"><Link className="button acid" href="/demo">See agents date <span>↗</span></Link><span className="micro-copy">26 people · 107 dates · zero small talk</span></div>
         <div className="hero-stickers" aria-hidden="true"><span>100% receipts</span><span>AI wingman</span><span>no cringe bios</span></div>
       </div>

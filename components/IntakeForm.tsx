@@ -15,14 +15,14 @@ export default function IntakeForm() {
       const response = await fetch("/api/people", {method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify(body)});
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Could not start analysis");
-      sessionStorage.setItem(`proxy:${data.id}`, JSON.stringify(data));
+      sessionStorage.setItem(`undate:${data.id}`, JSON.stringify(data));
       router.push(`/run/${data.id}`);
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Something went wrong"); setBusy(false); }
   }
 
   return <form className="intake" onSubmit={submit}>
     <div className="intake-heading">
-      <span className="eyebrow">Build your proxy</span>
+      <span className="eyebrow">Build your dating agent</span>
       <p>Paste the two public profiles you want the agent to understand.</p>
     </div>
 

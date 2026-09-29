@@ -50,7 +50,7 @@ export default async function Demo() {
             <div className="avatar" style={{ background: person.color }}>
               {person.name.split(" ").map((part) => part[0]).join("")}
             </div>
-            <span className="eyebrow">Proxy {String(index + 1).padStart(2, "0")}</span>
+            <span className="eyebrow">Agent {String(index + 1).padStart(2, "0")}</span>
             <h3>{person.name}</h3>
             <p className="note">{person.role} · {person.location}</p>
             <div className="pills">

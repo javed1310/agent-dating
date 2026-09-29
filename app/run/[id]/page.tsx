@@ -20,7 +20,7 @@ export default function RunPage() {
   const [realtime, setRealtime] = useState(false);
 
   useEffect(() => {
-    const saved = sessionStorage.getItem(`proxy:${id}`);
+    const saved = sessionStorage.getItem(`undate:${id}`) || sessionStorage.getItem(`proxy:${id}`);
     if (saved) Promise.resolve(JSON.parse(saved).personId || "").then(setPersonId);
     else fetch(`/api/runs/${id}/progress`, { cache: "no-store" }).then(async response => {
       const progress = await response.json();
@@ -43,7 +43,7 @@ export default function RunPage() {
       if (!response.ok) return;
       setStages(progress.stages); setTurns(progress.latestTranscript || []); setStatus(progress.status);
       if (progress.errors?.length) setError(progress.errors.map((item: { message: string }) => item.message).join("; "));
-      if (progress.status === "complete") { sessionStorage.removeItem(`proxy:${id}`); router.replace(`/p/${personId}`); }
+      if (progress.status === "complete") { sessionStorage.removeItem(`undate:${id}`); sessionStorage.removeItem(`proxy:${id}`); router.replace(`/p/${personId}`); }
     }).subscribe(subscription => setRealtime(subscription === "SUBSCRIBED"));
     return () => { setRealtime(false); void client.removeChannel(channel); };
   }, [id, personId, router]);
@@ -59,7 +59,7 @@ export default function RunPage() {
         if (stopped) return;
         setStages(progress.stages); setTurns(progress.latestTranscript || []); setStatus(progress.status);
         if (progress.errors?.length) setError(progress.errors.map((item: { message: string }) => item.message).join("; "));
-        if (progress.status === "complete") { sessionStorage.removeItem(`proxy:${id}`); router.replace(`/p/${personId}`); return; }
+        if (progress.status === "complete") { sessionStorage.removeItem(`undate:${id}`); sessionStorage.removeItem(`proxy:${id}`); router.replace(`/p/${personId}`); return; }
       } catch (cause) { setError(cause instanceof Error ? cause.message : "Progress check failed"); }
       timer = setTimeout(cycle, 900);
     }

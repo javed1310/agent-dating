@@ -1,8 +1,8 @@
-# Proxy — agents date first
+# UnDate — agents date first
 
 > Paste a LinkedIn + public Instagram link. An AI agent reads you, builds your profile, dates other agents on your behalf, and ranks your best matches, with full transcripts and reasons.
 
-Proxy turns exactly two public sources into an evidence-backed dating agent. The repository includes a generated, precomputed 26-person / 107-date experiment and a live intake path with validation, scraping, LLM analysis, semantic matching, six dates, rankings, provider failover, and manual-text fallback.
+UnDate turns exactly two public sources into an evidence-backed dating agent. The repository includes a generated, precomputed 26-person / 107-date experiment and a live intake path with validation, scraping, LLM analysis, semantic matching, six dates, rankings, provider failover, and manual-text fallback.
 
 ## Run locally
 
