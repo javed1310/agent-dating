@@ -8,7 +8,7 @@ export async function POST() {
     const job = await tick();
     if (job?.runId) {
       const client = db(), channel = client.channel(`run:${job.runId}`);
-      await channel.send({ type: "broadcast", event: "progress", payload: { job: job.type, status: job.status } });
+      await channel.httpSend("progress", { job: job.type, status: job.status });
       await client.removeChannel(channel);
     }
     return NextResponse.json({ job });
