@@ -29,6 +29,7 @@ export default function RunPage() {
       setStages(progress.stages);
       setTurns(progress.latestTranscript || []);
       setStatus(progress.status);
+      if (progress.errors?.length) setError(progress.errors.map((item: { message: string }) => item.message).join("; "));
       if (progress.status === "complete") router.replace(`/p/${progress.personId}`);
     }).catch(cause => setError(cause instanceof Error ? cause.message : "Saved run not found"));
   }, [id, router]);
@@ -41,6 +42,7 @@ export default function RunPage() {
       const response = await fetch(`/api/runs/${id}/progress`, { cache: "no-store" }), progress = await response.json();
       if (!response.ok) return;
       setStages(progress.stages); setTurns(progress.latestTranscript || []); setStatus(progress.status);
+      if (progress.errors?.length) setError(progress.errors.map((item: { message: string }) => item.message).join("; "));
       if (progress.status === "complete") { sessionStorage.removeItem(`proxy:${id}`); router.replace(`/p/${personId}`); }
     }).subscribe(subscription => setRealtime(subscription === "SUBSCRIBED"));
     return () => { setRealtime(false); void client.removeChannel(channel); };
@@ -56,7 +58,7 @@ export default function RunPage() {
         if (!response.ok) throw new Error(progress.error);
         if (stopped) return;
         setStages(progress.stages); setTurns(progress.latestTranscript || []); setStatus(progress.status);
-        if (progress.errors?.length) setError(progress.errors.map((item: { type: string; message: string }) => `${item.type}: ${item.message}`).join("; "));
+        if (progress.errors?.length) setError(progress.errors.map((item: { message: string }) => item.message).join("; "));
         if (progress.status === "complete") { sessionStorage.removeItem(`proxy:${id}`); router.replace(`/p/${personId}`); return; }
       } catch (cause) { setError(cause instanceof Error ? cause.message : "Progress check failed"); }
       timer = setTimeout(cycle, 900);
@@ -75,13 +77,16 @@ export default function RunPage() {
   async function paste() {
     if (manual.trim().length < 40) { setError("Paste at least 40 characters of public profile text."); return; }
     setRecovering(true); setError("");
-    const response = await fetch(`/api/people/${personId}/paste`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: manual, runId: id }) }), result = await response.json();
+    const response = await fetch(`/api/people/${personId}/paste`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: manual, runId: id, source: failedSource || "linkedin" }) }), result = await response.json();
     if (response.ok) { setStatus("processing"); setManual(""); } else setError(result.error || "Could not accept profile text");
     setRecovering(false);
   }
 
   const completed = [stages.scraping, stages.analyzing, stages.dating.total > 0 && stages.dating.complete === stages.dating.total, stages.ranking];
   const cards = ["Scraping both sources", "Building your profile", `Dating ${stages.dating.complete}/${stages.dating.total || 6} · turn ${stages.dating.currentTurns || 0}/8`, "Computing rankings"];
+  const failedSource = /instagram/i.test(error) ? "instagram" : /linkedin/i.test(error) ? "linkedin" : null;
+  const failedSourceName = failedSource === "instagram" ? "Instagram" : failedSource === "linkedin" ? "LinkedIn" : "Profile";
+  const failureHeading = failedSource === "instagram" && /private/i.test(error) ? "Instagram profile is private" : `${failedSourceName} profile could not be accessed`;
   return <div className="page">
     <span className="eyebrow">Live agent run · {realtime ? "Realtime connected" : "Secure polling"}</span>
     <h1 style={{ font: "500 64px Georgia" }}>{status === "needs_attention" ? "This run needs your help." : "Your agents are working…"}</h1>
@@ -90,6 +95,6 @@ export default function RunPage() {
     <div className="grid" style={{ marginBottom: 35 }}>{cards.map((label, index) => <div className="person" key={label}><span className="eyebrow">{completed[index] ? "Complete" : "Waiting"}</span><h3>{label}</h3></div>)}</div>
     {turns.length > 0 && <section className="transcript"><span className="eyebrow">Live transcript</span>{turns.map((turn, index) => <div className={`bubble ${turn.speaker === "b" ? "b" : ""}`} key={index}><strong>Agent {turn.speaker.toUpperCase()}</strong>{turn.text}</div>)}</section>}
     {error && <div className="error">{error}</div>}
-    {status === "needs_attention" && <div className="card" style={{ marginTop: 25 }}><h2>Recover this run</h2><p className="note">Retry the failed job, or paste public LinkedIn profile text if scraping was blocked.</p><button className="button" disabled={recovering} onClick={retry}>Retry failed step</button><label style={{ display: "block", marginTop: 20 }} className="eyebrow">Public profile text fallback</label><textarea value={manual} onChange={event => setManual(event.target.value)} placeholder="Paste the public profile headline, about, experience, and skills…" style={{ width: "100%", minHeight: 130, padding: 14, margin: "10px 0", borderRadius: 10 }} /><button className="button acid" disabled={recovering} onClick={paste}>Use pasted text and continue</button></div>}
+    {status === "needs_attention" && <div className="card" style={{ marginTop: 25 }}><span className="eyebrow">Source unavailable</span><h2>{failureHeading}</h2><p className="note">{error || `${failedSourceName} did not return public profile data.`}</p><p className="note">Matching has stopped because the experiment requires evidence from both LinkedIn and Instagram. No private content was accessed.</p><p className="note">Make the {failedSourceName} profile public and retry, or paste profile text you are authorized to provide for this source.</p><button className="button" disabled={recovering} onClick={retry}>Retry {failedSourceName}</button><label style={{ display: "block", marginTop: 20 }} className="eyebrow">{failedSourceName} profile text fallback</label><textarea value={manual} onChange={event => setManual(event.target.value)} placeholder={`Paste ${failedSourceName} bio, profile details, and relevant public text…`} style={{ width: "100%", minHeight: 130, padding: 14, margin: "10px 0", borderRadius: 10 }} /><button className="button acid" disabled={recovering} onClick={paste}>Use {failedSourceName} text and continue</button></div>}
   </div>;
 }
