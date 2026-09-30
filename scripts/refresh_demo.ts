@@ -33,7 +33,7 @@ for (const person of run.people) {
     if (!snippet) throw new Error(`${person.name} has no usable public Instagram evidence`);
     person.profile.evidence.push({ field: "interests", claim: "Public Instagram bio or post signal", source: "Instagram", snippet: snippet.slice(0, 500) });
   }
-  const requiredFields = ["summary", "career_stage", "skills", "hobbies", "interests", "values", "communication_style", "lifestyle", "location", "needs", "looking_for", "deal_breakers"];
+  const requiredFields = ["summary", "career_stage", "skills", "hobbies", "interests", "values", "communication_style", "lifestyle", "location", "needs", "looking_for", "deal_breakers"] as const;
   const linkedinSnippet = person.profile.evidence.find(item => item.source === "LinkedIn")?.snippet || "LinkedIn does not explicitly state this information.";
   const instagramSnippet = person.profile.evidence.find(item => item.source === "Instagram")?.snippet || "Instagram does not explicitly state this information.";
   for (const field of requiredFields) if (!person.profile.evidence.some(item => item.field === field)) {
