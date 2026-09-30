@@ -1,2 +1,8 @@
-import {NextResponse} from "next/server";import {z} from "zod";import {db,enqueue} from "@/lib/db/supabase";
-export async function POST(req:Request){try{const {personIds}=z.object({personIds:z.array(z.string().uuid()).min(1)}).parse(await req.json()),s=db(),{data:run,error}=await s.from("runs").insert({is_demo:false}).select("id").single();if(error)throw error;const {error:linkError}=await s.from("run_people").insert(personIds.map(person_id=>({run_id:run.id,person_id})));if(linkError)throw linkError;for(const personId of personIds)await enqueue("scrape_person",{personId,runId:run.id});return NextResponse.json(run,{status:202})}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Could not create run"},{status:400})}}
+import { NextResponse } from "next/server";
+
+// Runs must be created through /api/people so the creator receives a scoped
+// access token. Keeping this legacy bulk endpoint disabled prevents callers
+// from starting jobs for arbitrary existing person IDs.
+export async function POST() {
+  return NextResponse.json({ error: "Create a run through the profile form" }, { status: 410 });
+}

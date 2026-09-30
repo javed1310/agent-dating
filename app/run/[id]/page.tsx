@@ -11,6 +11,7 @@ export default function RunPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [personId, setPersonId] = useState("");
+  const [accessToken, setAccessToken] = useState("");
   const [stages, setStages] = useState<Stages>({ scraping: false, analyzing: false, dating: { complete: 0, total: 0 }, ranking: false });
   const [turns, setTurns] = useState<Turn[]>([]);
   const [status, setStatus] = useState("queued");
@@ -21,7 +22,7 @@ export default function RunPage() {
 
   useEffect(() => {
     const saved = sessionStorage.getItem(`undate:${id}`) || sessionStorage.getItem(`proxy:${id}`);
-    if (saved) Promise.resolve(JSON.parse(saved).personId || "").then(setPersonId);
+    if (saved) { const parsed = JSON.parse(saved); Promise.resolve(parsed).then(value => { setPersonId(value.personId || ""); setAccessToken(value.accessToken || ""); }); }
     else fetch(`/api/runs/${id}/progress`, { cache: "no-store" }).then(async response => {
       const progress = await response.json();
       if (!response.ok) throw new Error(progress.error || "Saved run not found");
@@ -49,11 +50,11 @@ export default function RunPage() {
   }, [id, personId, router]);
 
   useEffect(() => {
-    if (!personId || status === "complete" || status === "needs_attention") return;
+    if (!personId || !accessToken || status === "complete" || status === "needs_attention") return;
     let stopped = false, timer: ReturnType<typeof setTimeout>;
     async function cycle() {
       try {
-        await fetch("/api/jobs/tick", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ runId: id }) });
+        await fetch("/api/jobs/tick", { method: "POST", headers: { "content-type": "application/json", "x-run-token": accessToken }, body: JSON.stringify({ runId: id }) });
         const response = await fetch(`/api/runs/${id}/progress`, { cache: "no-store" }), progress = await response.json();
         if (!response.ok) throw new Error(progress.error);
         if (stopped) return;
@@ -65,11 +66,11 @@ export default function RunPage() {
     }
     cycle();
     return () => { stopped = true; clearTimeout(timer); };
-  }, [id, personId, router, status]);
+  }, [id, personId, accessToken, router, status]);
 
   async function retry() {
     setRecovering(true); setError("");
-    const response = await fetch(`/api/runs/${id}/retry`, { method: "POST" }), result = await response.json();
+    const response = await fetch(`/api/runs/${id}/retry`, { method: "POST", headers: { "x-run-token": accessToken } }), result = await response.json();
     if (response.ok && result.retried) setStatus("processing"); else setError(result.error || "No failed job was available to retry");
     setRecovering(false);
   }
@@ -77,7 +78,7 @@ export default function RunPage() {
   async function paste() {
     if (manual.trim().length < 40) { setError("Paste at least 40 characters of public profile text."); return; }
     setRecovering(true); setError("");
-    const response = await fetch(`/api/people/${personId}/paste`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ text: manual, runId: id, source: failedSource || "linkedin" }) }), result = await response.json();
+    const response = await fetch(`/api/people/${personId}/paste`, { method: "POST", headers: { "content-type": "application/json", "x-run-token": accessToken }, body: JSON.stringify({ text: manual, runId: id, source: failedSource || "linkedin" }) }), result = await response.json();
     if (response.ok) { setStatus("processing"); setManual(""); } else setError(result.error || "Could not accept profile text");
     setRecovering(false);
   }
@@ -97,6 +98,7 @@ export default function RunPage() {
     <div className="progress">{completed.map((done, index) => <i className={`step ${done ? "done" : ""}`} key={index} />)}</div>
     <div className="grid" style={{ marginBottom: 35 }}>{cards.map((label, index) => <div className="person" key={label}><span className="eyebrow">{completed[index] ? "Complete" : "Waiting"}</span><h3>{label}</h3></div>)}</div>
     {turns.length > 0 && <section className="transcript"><span className="eyebrow">Live transcript</span>{turns.map((turn, index) => <div className={`bubble ${turn.speaker === "b" ? "b" : ""}`} key={index}><strong>Agent {turn.speaker.toUpperCase()}</strong>{turn.text}</div>)}</section>}
+    {!accessToken && personId && status !== "complete" && <div className="error">This saved run can only be continued in the browser tab that created it.</div>}
     {error && <div className="error">{error}</div>}
     {status === "needs_attention" && <div className="card" style={{ marginTop: 25 }}><span className="eyebrow">Source unavailable</span><h2>{failureHeading}</h2><p className="note">{error || `${failedSourceName} did not return public profile data.`}</p><p className="note">Matching has stopped because the experiment requires evidence from both LinkedIn and Instagram. No private content was accessed.</p><p className="note">{recoveryGuidance}</p><button className="button" disabled={recovering} onClick={retry}>Retry {failedSourceName}</button><label style={{ display: "block", marginTop: 20 }} className="eyebrow">{failedSourceName} profile text fallback</label><textarea value={manual} onChange={event => setManual(event.target.value)} placeholder={`Paste ${failedSourceName} bio, profile details, and relevant public text…`} style={{ width: "100%", minHeight: 130, padding: 14, margin: "10px 0", borderRadius: 10 }} /><button className="button acid" disabled={recovering} onClick={paste}>Use {failedSourceName} text and continue</button></div>}
   </div>;

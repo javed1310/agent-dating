@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { intakeSchema } from "@/lib/schema";
 import { db, enqueue } from "@/lib/db/supabase";
+import { createRunToken } from "@/lib/run-auth";
 
 export async function POST(req: Request) {
   try {
@@ -21,6 +22,6 @@ export async function POST(req: Request) {
     const { error: linkError } = await s.from("run_people").insert({ run_id: run.id, person_id: person.id });
     if (linkError) throw linkError;
     await enqueue("scrape_person", { personId: person.id, runId: run.id });
-    return NextResponse.json({ id: run.id, personId: person.id, status: "queued", mode: "live" }, { status: 202 });
+    return NextResponse.json({ id: run.id, personId: person.id, accessToken: createRunToken(run.id, person.id), status: "queued", mode: "live" }, { status: 202 });
   } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to queue this person" }, { status: 400 }); }
 }

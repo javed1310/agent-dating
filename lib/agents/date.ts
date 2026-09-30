@@ -84,7 +84,7 @@ const normalizeJudgment = (value: unknown): DateJudgment => {
   return { reflections: parsed.reflections, scores: { a_to_b: normalizeScore(parsed.scores.a_to_b), b_to_a: normalizeScore(parsed.scores.b_to_a) } };
 };
 
-function transcriptFallbackJudgment(
+export function transcriptFallbackJudgment(
   a: { name: string; profile: AgentProfile },
   b: { name: string; profile: AgentProfile },
   turns: DateTurn[],
